@@ -53,6 +53,9 @@ def parse_args():
         action="store_true",
         help="Few shot for multiple-choice questions, zero shot for others.",
     )
+    ## added by wyp
+    # parser.add_argument("--self_defined_examples_type", type=str, default="official4",
+                        # help="Type of self-defined examples: official4 for default, pi1 for special examples")
     args = parser.parse_args()
     args.top_p = (
         1 if args.temperature == 0 else args.top_p
@@ -237,7 +240,10 @@ def main(llm, tokenizer, data_name, args):
 
     stop_words = ["</s>", "<|im_end|>", "<|endoftext|>"]
 
-    if args.prompt_type in ["cot"]:
+    ## added by wyp
+    # if args.prompt_type in ["cot", "qwen25-math-cot-tool"] or (args.prompt_type in ["llama", "deepseek-distill"] and args.num_shots > 0):
+        # stop_words.append("\n\nQuestion:")
+    if args.prompt_type in ["cot", "qwen25-math-cot"]:
         stop_words.append("\n\nQuestion:")
     if args.prompt_type in ["pal", "tool-integrated", "jiuzhang_tora"]:
         stop_words.extend(["\n\n---", "```output"])

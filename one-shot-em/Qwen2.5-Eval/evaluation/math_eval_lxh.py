@@ -11,12 +11,12 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from evaluate import evaluate
-from utils import set_seed, load_jsonl, save_jsonl, construct_prompt
 from parser import *
 from trajectory import *
 from data_loader import load_data
 from python_executor import PythonExecutor
 from model_utils import load_hf_lm_and_tokenizer, generate_completions
+from utils_lxh import set_seed, load_jsonl, save_jsonl, construct_prompt
 
 
 def parse_args():
@@ -53,6 +53,9 @@ def parse_args():
         action="store_true",
         help="Few shot for multiple-choice questions, zero shot for others.",
     )
+    ## added by wyp
+    # parser.add_argument("--self_defined_examples_type", type=str, default="official4",
+                        # help="Type of self-defined examples: official4 for default, pi1 for special examples")
     args = parser.parse_args()
     args.top_p = (
         1 if args.temperature == 0 else args.top_p
@@ -237,7 +240,10 @@ def main(llm, tokenizer, data_name, args):
 
     stop_words = ["</s>", "<|im_end|>", "<|endoftext|>"]
 
-    if args.prompt_type in ["cot"]:
+    ## added by wyp
+    # if args.prompt_type in ["cot", "qwen25-math-cot-tool"] or (args.prompt_type in ["llama", "deepseek-distill"] and args.num_shots > 0):
+        # stop_words.append("\n\nQuestion:")
+    if args.prompt_type in ["cot", "qwen25-math-cot"]: 
         stop_words.append("\n\nQuestion:")
     if args.prompt_type in ["pal", "tool-integrated", "jiuzhang_tora"]:
         stop_words.extend(["\n\n---", "```output"])
@@ -275,7 +281,6 @@ def main(llm, tokenizer, data_name, args):
                             temperature=args.temperature,
                             max_tokens=args.max_tokens_per_call,
                             stop=stop_words,
-                            prefix="To",
                             stop_token_ids=(
                                 [151645, 151643]
                                 if "qwen2" in args.model_name_or_path.lower()
@@ -290,7 +295,6 @@ def main(llm, tokenizer, data_name, args):
                     batch_outputs = [output.outputs[0].text for output in batch_outputs]
                     outputs.extend(batch_outputs)
             else:
-                prompts = [p + "To" for p in prompts]
                 outputs = llm.generate(
                     prompts,
                     SamplingParams(
@@ -319,7 +323,6 @@ def main(llm, tokenizer, data_name, args):
                 max_new_tokens=args.max_tokens_per_call,
                 batch_size=16,
                 stop_id_sequences=stop_words,
-                prefix="To", 
             )
 
         assert len(outputs) == len(current_prompts)

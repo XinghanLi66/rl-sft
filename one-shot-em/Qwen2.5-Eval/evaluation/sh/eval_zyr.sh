@@ -1,14 +1,14 @@
 set -x
-export CUDA_VISIBLE_DEVICES="0,1,2,3"
-MODEL_NAME_OR_PATH="/homes/gws/lxh22/models/Qwen2.5-Math-7B"
-OUTPUT_DIR="/homes/gws/lxh22/rl-sft/one-shot-em/7B-eval-pi1+to"
+export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+MODEL_NAME_OR_PATH="/mmfs1/gscratch/simondu/lxh/models/Qwen2.5-Math-1.5B"
+OUTPUT_DIR="/mmfs1/gscratch/simondu/lxh/rl-sft/one-shot-em/results/1.5B-eval-math-cot-simple"
 mkdir -p $OUTPUT_DIR
 PROMPT_TYPE="qwen25-math-cot"
 MAX_TOKENS_PER_CALL="3072"
 SPLIT="test"
 NUM_TEST_SAMPLE=-1
-#DATA_NAMES="amc23x8,minerva_math,olympiadbench,math500"
-DATA_NAMES="math500-modified" # change this
+DATA_NAMES="amc23x8,minerva_math,olympiadbench,math500"
+#DATA_NAMES="amc23x8" # change this
 IFS=',' read -ra DATASETS <<< "$DATA_NAMES"
 ALL_EXIST=true
 
