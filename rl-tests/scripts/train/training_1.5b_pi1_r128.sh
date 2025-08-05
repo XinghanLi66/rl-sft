@@ -2,23 +2,36 @@
 set -x
 
 # TODO: change to your own path
-CHECKPOINTS_DIR=/gscratch/simondu/lxh/models/Qwen2.5-Math-1.5B
+CHECKPOINTS_DIR=/homes/gws/lxh22/rl-sft/save
 
 export VLLM_ATTENTION_BACKEND=XFORMERS
+
+## reminder: before training, check:
+## data.train_files
+## data.val_files
+## CHECKPOINTS_DIR
+
+## Some original parameters:
+##  data.train_batch_size=128 \
+##  data.val_batch_size=530 \
+##  data.max_prompt_length=1024 \
+##  data.max_response_length=3072 \
+##  actor_rollout_ref.actor.ppo_mini_batch_size=128 \
+##  actor_rollout_ref.actor.kl_loss_coef=0.001 
 
 python3 -m verl.trainer.main_ppo \
  algorithm.adv_estimator=grpo \
  data.train_files=data/train/one_shot_rlvr/pi1_r128.parquet \
  data.val_files=data/test/math500.parquet \
- data.train_batch_size=128 \
- data.val_batch_size=530 \
+ data.train_batch_size=16 \
+ data.val_batch_size=53 \
  data.max_prompt_length=1024 \
  data.max_response_length=3072 \
  reward_model.reward_manager='naive' \
- actor_rollout_ref.model.path='Qwen/Qwen2.5-Math-1.5B' \
+ actor_rollout_ref.model.path='/homes/gws/lxh22/models/Qwen2.5-Math-1.5B' \
  actor_rollout_ref.actor.optim.lr=1e-6 \
  actor_rollout_ref.model.use_remove_padding=True \
- actor_rollout_ref.actor.ppo_mini_batch_size=128 \
+ actor_rollout_ref.actor.ppo_mini_batch_size=16 \
  actor_rollout_ref.actor.use_dynamic_bsz=True \
  actor_rollout_ref.actor.ppo_max_token_len_per_gpu=24000 \
  actor_rollout_ref.actor.use_kl_loss=True \
@@ -48,4 +61,4 @@ python3 -m verl.trainer.main_ppo \
  trainer.save_freq=20 \
  trainer.test_freq=20 \
  trainer.default_hdfs_dir=null \
- trainer.total_epochs=2000 2>&1 | tee verl_demo.log
+ trainer.total_epochs=200 2>&1 | tee verl_demo.log

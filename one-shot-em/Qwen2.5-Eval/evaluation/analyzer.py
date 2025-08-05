@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 datasets = ['amc23x8', 'math500', 'minerva_math', 'olympiadbench']
+datasets_06 = ['amc23x8', 'aime25x8']
 
 def extract_scores_from_json(json_file):
     """Extract scores from a JSON evaluation result file."""
@@ -32,7 +33,7 @@ def sort_checkpoint(x):
     """
     try:
         # Extract the number after 'checkpoint-'
-        return int(x.split('-')[1])
+        return int(x.split('_')[1])
     except (IndexError, ValueError):
         # If the format is unexpected, return 0 to put it at the start
         return 1000000
@@ -44,30 +45,36 @@ def main():
     
     # Find all checkpoint directories
     # checkpoint_base = Path('/homes/gws/lxh22/rl-sft/one-input-sft/save/Qwen2.5-Math-1.5B-filter1') 
-    checkpoint_base = Path('/local1/lxh/save/Qwen2.5-Math-1.5B') 
+    checkpoint_base = Path('/local1/lxh/save/em/Qwen2.5-Math-1.5B/prompted_one_shot_1.5b_t0.5') 
     # checkpoint_base = Path('/homes/gws/lxh22/rl-sft/one-shot-em/checkpoints/Qwen2.5-Math-1.5B/one_shot_1.5b_t0.5') ## change this
 
-    steps = list(range(0, 100, 10)) + list(range(100, 3100, 100))
-    # steps = list(range(0, 55, 5)) ## change this
+    steps = [5, 10, 15, 20]
     all_scores = []
     
     for step in steps:
         print(f"Processing step: {step}")
-        step_str = f'step-{step}'
+        step_str = f'step_{step}'
         current_score = {'checkpoint': step_str}
         for dataset in datasets:
-            extracted = extract_scores_from_path(checkpoint_base / step_str / f'temp00/eval/{dataset}')
+            extracted = extract_scores_from_path(checkpoint_base / step_str / f'temp00/{dataset}')
             if extracted: 
                 current_score[dataset] = extracted
-        extracted = extract_scores_from_path(checkpoint_base / step_str / 'temp01/amc-eval/amc23x8')
-        if extracted:
-            current_score['amc-t0.6'] = extracted
-        extracted = extract_scores_from_path(checkpoint_base / step_str / 'temp03/amc-eval/amc23x8')
-        if extracted:
-            current_score['amc-to-t0.5'] = extracted        
-        extracted = extract_scores_from_path(checkpoint_base / step_str / 'temp04/amc-eval/amc23x8')
-        if extracted:
-            current_score['amc-to'] = extracted
+
+        for dataset in datasets_06:
+            extracted = extract_scores_from_path(checkpoint_base / step_str / f'temp06/{dataset}')
+            if extracted: 
+                current_score[dataset + '-t0.6'] = extracted
+
+        # extracted = extract_scores_from_path(checkpoint_base / step_str / 'temp01/amc-eval/amc23x8')
+        # if extracted:
+        #     current_score['amc-t0'] = extracted
+        # extracted = extract_scores_from_path(checkpoint_base / step_str / 'temp03/amc-eval/amc23x8')
+        # if extracted:
+        #     current_score['amc'] = extracted        
+        # extracted = extract_scores_from_path(checkpoint_base / step_str / 'temp04/amc-eval/amc23x8')
+        # if extracted:
+        #     current_score['amc-to'] = extracted
+
         all_scores.append(current_score)
 
     # Convert to DataFrame
@@ -80,19 +87,17 @@ def main():
     df.to_csv(results_dir / 'checkpoint_scores.csv', index=False)
     
     ## Amc line styles
-    amc_styles = {'amc23x8': '-', 'amc-t0.6': ':', 'amc-to': '--', 'amc-to-t0.5': '-.'}
+    # amc_styles = {'amc23x8': '-', 'amc-t0.6': ':', 'amc-to': '--', 'amc-to-t0.5': '-.'}
 
     # Create line plot
     plt.figure(figsize=(12, 6))
     for column in df.columns:
         if column != 'checkpoint':
-            if not column.startswith('amc'):
+            if not column.endswith('-t0.6'):
                 plt.plot(df['checkpoint'], df[column], marker='o', label=column)
             else:
-                # color = '#FF204E' if '-t' in column else '#A0153E' 
-                linestyle = amc_styles.get(column, '-')
                 plt.plot(df['checkpoint'], df[column], marker='o', label=column, \
-                         linestyle=linestyle, color='purple')
+                         linestyle=':', color='purple')
     
     plt.title('Evaluation Scores Across Checkpoints')
     plt.xlabel('Checkpoint')

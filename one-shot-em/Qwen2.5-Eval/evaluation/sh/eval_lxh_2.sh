@@ -1,19 +1,18 @@
 set -x
-export CUDA_VISIBLE_DEVICES="0,1,2,3"
-MODEL_NAME_OR_PATH="/mmfs1/gscratch/simondu/lxh/models/Qwen2.5-Math-7B"
-OUTPUT_DIR="/mmfs1/gscratch/simondu/lxh/rl-sft/one-shot-em/results/7B-eval-promptnobox"
+export CUDA_VISIBLE_DEVICES="2,3"
+# MODEL_NAME_OR_PATH="/homes/gws/lxh22/rl-sft/one-shot-em/checkpoints/Qwen2.5-Math-1.5B/one_shot_1.5b_t0.5/step_35"
+# OUTPUT_DIR="/mmfs1/gscratch/simondu/lxh/rl-sft/one-shot-em/results/7B-eval-promptnobox"
 mkdir -p $OUTPUT_DIR
-PROMPT_TYPE="qwen25-math-cot-debug-1"
+PROMPT_TYPE="qwen25-math-cot"
 MAX_TOKENS_PER_CALL="3072"
 SPLIT="test"
 NUM_TEST_SAMPLE=-1
 DATA_NAMES="amc23x8,aime25x8"
-# DATA_NAMES="math500" # change this
 IFS=',' read -ra DATASETS <<< "$DATA_NAMES"
 ALL_EXIST=true
 
 TOKENIZERS_PARALLELISM=false \
-python3 -u math_eval_lxh.py \
+python3 -u math_eval_less_gpu.py \
     --model_name_or_path ${MODEL_NAME_OR_PATH} \
     --data_name ${DATA_NAMES} \
     --output_dir ${OUTPUT_DIR} \

@@ -1,0 +1,5 @@
+Using LocalLogger is deprecated. The constructor API will change
+Found checkpoint: %s /local1/lxh/save/verl_few_shot/Qwen2.5-Math-7B-dsr_sub_offline_0804/global_step_0
+Load from checkpoint folder: /local1/lxh/save/verl_few_shot/Qwen2.5-Math-7B-dsr_sub_offline_0804/global_step_0
+Setting global step to 0
+Resuming from /local1/lxh/save/verl_few_shot/Qwen2.5-Math-7B-dsr_sub_offline_0804/global_step_0

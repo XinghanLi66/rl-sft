@@ -1,0 +1,68 @@
+Using LocalLogger is deprecated. The constructor API will change
+Found checkpoint: %s /local1/lxh/save/verl_few_shot/Qwen2.5-Math-7B-dsr_sub_offline_0804/global_step_0
+Load from checkpoint folder: /local1/lxh/save/verl_few_shot/Qwen2.5-Math-7B-dsr_sub_offline_0804/global_step_0
+Setting global step to 0
+Resuming from /local1/lxh/save/verl_few_shot/Qwen2.5-Math-7B-dsr_sub_offline_0804/global_step_0
+/homes/gws/lxh22/rl-sft/rl-tests/verl/trainer/ppo/ray_trainer.py:1043: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.train_dataloader = torch.load(dataloader_local_path)
+original dataset len: 1209
+filter dataset len: 1209
+validation generation end
+<|im_start|>system
+Please reason step by step, and put your final answer within \boxed{}.<|im_end|>
+<|im_start|>user
+Simplify $\frac{1}{5}\cdot \frac{8}{7}\div \frac{12}{20}$. Let's think step by step and output the final answer within \boxed{}.<|im_end|>
+<|im_start|>assistant
+To solve the expression \(\frac{1}{5} \cdot \frac{8}{7} \div \frac{12}{20}\), we can follow these steps:
+
+1. First, simplify the division by converting it to multiplication by the reciprocal.
+2. Then, multiply the fractions together.
+3. Finally, simplify the resulting fraction if possible.
+
+Let's break it down:
+
+1. The expression \(\frac{1}{5} \cdot \frac{8}{7} \div \frac{12}{20}\) can be rewritten as \(\frac{1}{5} \cdot \frac{8}{7} \cdot \frac{20}{12}\).
+2. Now we can multiply the numerators together and the denominators together: \(\frac{1 \cdot 8 \cdot 20}{5 \cdot 7 \cdot 12}\).
+3. Simplify the resulting fraction: \(\frac{160}{420}\).
+
+We can simplify \(\frac{160}{420}\) by finding the greatest common divisor (GCD) of 160 and 420, which is 20. Dividing both the numerator and the denominator by 20, we get \(\frac{8}{21}\).
+
+Let's confirm this with Python code.
+```python
+from math import gcd
+
+# Numerator and denominator of the fractions
+numerator = 1 * 8 * 20
+denominator = 5 * 7 * 12
+
+# Simplify the fraction by dividing by the greatest common divisor
+common_divisor = gcd(numerator, denominator)
+simplified_numerator = numerator // common_divisor
+simplified_denominator = denominator // common_divisor
+
+simplified_fraction = (simplified_numerator, simplified_denominator)
+print(simplified_fraction)
+```
+```output
+(8, 21)
+```
+The simplified form of the expression \(\frac{1}{5} \cdot \frac{8}{7} \div \frac{12}{20}\) is \(\frac{8}{21}\).
+
+So the final answer is \(\boxed{\frac{8}{21}}\).<|endoftext|>
+<|im_start|>system
+Please reason step by step, and put your final answer within \boxed{}.<|im_end|>
+<|im_start|>user
+Let $k$ be real numbers such that the system $|25+20i-z|=5$ and $|z-4-k|=|z-3i-k|$ has exactly one complex solution $z$. The sum of all possible values of $k$ can be written as $\frac{m}{n}$, where $m$ and $n$ are relatively prime positive integers. Find $m+n$. Here $i=\sqrt{-1}$. Let's think step by step and output the final answer within \boxed{}.<|im_end|>
+<|im_start|>assistant
+Let $k$ be real numbers such that the system $|25+20i-z|=5$ and $|z-4-k|=|z-3i-k|$ has exactly one complex solution $z$. The sum of all possible values of $k$ can be written as $\frac{m}{n}$, where $m$ and $n$ are relatively prime positive integers. Find $m+n$. Here $i=\sqrt{-1}$. Let's think step by step and output the final answer within \boxed{}.<|endoftext|>
+<|im_start|>system
+Please reason step by step, and put your final answer within \boxed{}.<|im_end|>
+<|im_start|>user
+A large ground-based telescope has an effective focal length of 10 meters. Two astronomical objects are separated by 1 arc second in the sky. How far apart will the two corresponding images be in the focal plane, in microns? Let's think step by step and output the final answer within \boxed{}.<|im_end|>
+<|im_start|>assistant
+A large ground-based telescope has an effective focal length of 10 meters. Two astronomical objects are separated by 1 arc second in the sky. How far apart will the two corresponding images be in the focal plane, in microns? Let's think step by step and output the final answer within \boxed{}.<|endoftext|>
+("Initial validation metrics: {'val/test_score/deepscaler/math': 0.672, "
+ "'val/test_score/deepscaler/aime25x8': 0.0375, "
+ "'val/test_score/deepscaler/minerva': 0.08823529411764706}")
+step:0 - val/test_score/deepscaler/math:0.672 - val/test_score/deepscaler/aime25x8:0.037 - val/test_score/deepscaler/minerva:0.088
+Saving initial checkpoint at step 0

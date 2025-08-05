@@ -65,11 +65,114 @@ def get_optimal_micro_batch_size(model_name: str, world_size: int = 1) -> int:
         return min(base_batch + 1, int(base_batch * 1.5))
     return base_batch
 
-def apply_chat_template(tokenizer, problem: str) -> str:
-    return tokenizer.apply_chat_template(
-        [{"role": "user", "content": problem}],
-        tokenize=False, add_generation_prompt=True
+COT_TEMPLATES = {
+    "qwen25-math-cot": """
+<|im_start|>system
+{{ system_prompt }}<|im_end|>
+<|im_start|>user
+Question: {{ example_question }}
+Answer: {{ example_answer }}
+
+
+Question: {{ question }}
+Answer:<|im_end|>
+<|im_start|>assistant
+Question: {{ question }}
+Answer: To
+"""
+}
+
+cnt = 0
+
+COT_TEMPLATES = {
+    "qwen25-math-cot": r"""
+{%- if tools %}
+    {{- '<|im_start|>system\n' }}
+    {%- if messages[0]['role'] == 'system' %}
+        {{- messages[0]['content'] }}
+    {%- else %}
+        {{- 'Please reason step by step, and put your final answer within \\boxed{}.' }}
+    {%- endif %}
+    {{- "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+    {%- for tool in tools %}
+        {{- "\n" }}
+        {{- tool | tojson }}
+    {%- endfor %}
+    {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n" }}
+{%- else %}
+    {%- if messages[0]['role'] == 'system' %}
+        {{- '<|im_start|>system\n' + messages[0]['content'] + '<|im_end|>\n' }}
+    {%- else %}
+        {{- '<|im_start|>system\nPlease reason step by step.<|im_end|>\n' }}
+    {%- endif %}
+{%- endif %}
+{%- for message in messages %}
+    {%- if (message.role == "user") or (message.role == "system" and not loop.first) or (message.role == "assistant" and not message.tool_calls) %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>' + '\n' }}
+    {%- elif message.role == "assistant" %}
+        {{- '<|im_start|>' + message.role }}
+        {%- if message.content %}
+            {{- '\n' + message.content }}
+        {%- endif %}
+        {%- for tool_call in message.tool_calls %}
+            {%- if tool_call.function is defined %}
+                {%- set tool_call = tool_call.function %}
+            {%- endif %}
+            {{- '\n<tool_call>\n{"name": "' }}
+            {{- tool_call.name }}
+            {{- '", "arguments": ' }}
+            {{- tool_call.arguments | tojson }}
+            {{- '}\n</tool_call>' }}
+        {%- endfor %}
+        {{- '<|im_end|>\n' }}
+    {%- elif message.role == "tool" %}
+        {%- if (loop.index0 == 0) or (messages[loop.index0 - 1].role != "tool") %}
+            {{- '<|im_start|>user' }}
+        {%- endif %}
+        {{- '\n<tool_response>\n' }}
+        {{- message.content }}
+        {{- '\n</tool_response>' }}
+        {%- if loop.last or (messages[loop.index0 + 1].role != "tool") %}
+            {{- '<|im_end|>\n' }}
+        {%- endif %}
+    {%- elif message.role == "generation_prompt" %}
+        {{- message.content }}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+{%- endif %}
+"""
+}
+
+
+
+cnt = 0
+
+def apply_chat_template(tokenizer, problem: str, template_key="qwen25-math-cot") -> str:
+    global cnt
+    # print(f"tokenizer.chat_template", tokenizer.chat_template)
+
+    tokenizer.chat_template = COT_TEMPLATES[template_key]
+
+    user_content = "Question: The pressure \\( P \\) exerted by wind on a sail varies jointly as the area \\( A \\) of the sail and the cube of the wind's velocity \\( V \\). When the velocity is \\( 8 \\) miles per hour, the pressure on a sail of \\( 2 \\) square feet is \\( 4 \\) pounds. Find the wind velocity when the pressure on \\( 4 \\) square feet of sail is \\( 32 \\) pounds. Let's think step by step and output the final answer within \\boxed{{}}.\nAnswer: To solve the problem, we start by writing the mathematical relationship for the pressure \\( P \\):\n\\[ P = k \\cdot A \\cdot V^3 \\]\nwhere \\( k \\) is a constant. We need to find \\( k \\) using the given information:\n\\[ 4 = k \\cdot 2 \\cdot 8^3 \\]\nSolving for \\( k \\):\n\\[ 4 = k \\cdot 2 \\cdot 512 \\]\n\\[ 4 = 1024k \\]\n\\[ k = \\frac{{4}}{{1024}} \\]\n\\[ k = \\frac{{1}}{{256}} \\]\nNow we use this value of \\( k \\) to find the velocity \\( V \\) when the pressure \\( P \\) on 4 square feet of sail is 32 pounds:\n\\[ 32 = \\frac{{1}}{{256}} \\cdot 4 \\cdot V^3 \\]\n\\[ 32 = \\frac{{V^3}}{{64}} \\]\n\\[ 32 \\cdot 64 = V^3 \\]\n\\[ 2048 = V^3 \\]\n\\[ V = \\sqrt[3]{{2048}} \\]\n\\[ V = 12.8 \\]\nThus, the wind velocity is \\( \\boxed{{12.8}} \\) miles per hour.\n\n\nQuestion: " + problem + "\nAnswer:"
+
+    generation_prompt_content = "<|im_start|>assistant\n Question: " + problem + " \n Answer: To"
+
+    full_input = tokenizer.apply_chat_template(
+        [{"role": "user", "content": user_content},
+         {"role": "generation_prompt", "content": generation_prompt_content}],
+        tokenize=False,
+        # add_generation_prompt=True,
     )
+
+    cnt += 1
+    if cnt == 1:
+        print(f"################### user_content ###################\n\n{user_content}\n")
+        print(f"################### generation_prompt_content ###################\n\n{generation_prompt_content}\n")
+        print(f"################### full input ###################\n\n{full_input}\n")
+
+    return full_input
 
 def main():
     args = parse_args()
@@ -84,7 +187,9 @@ def main():
     temp = args.temperature
     lr = args.learning_rate
 
-    save_root = args.save_root or (f"checkpoints/{args.model_name}/{args.run_name}" if args.run_name else f"checkpoints/{args.model_name}")
+    save_root = args.save_root or "checkpoints"
+    save_root = f"{save_root}/{args.model_name}/{args.run_name}" if args.run_name else f"checkpoints/{args.model_name}"
+
     ds_config = {
         "train_micro_batch_size_per_gpu": micro_bs,
         "train_batch_size": eff_bs,
@@ -122,6 +227,7 @@ def main():
     prev_logits = None
     model.train()
     
+    ## at most one epoch?
     for step, batch in enumerate(train_loader, start=1):
         if step > args.max_steps:
             print(f"Exceed max step {args.max_steps}, training stopped.")

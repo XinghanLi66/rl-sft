@@ -61,6 +61,7 @@ Explanation: These are different numbers and cannot be equivalent.
 """
 
 from verl.utils.reward_score.utils.utils import extract_answer, grade_answer_sympy, grade_answer_mathd
+import numpy as np
 
 def compute_score(data_source, solution_str, ground_truth, extra_info=None, use_think=False):
     
@@ -78,6 +79,10 @@ def compute_score(data_source, solution_str, ground_truth, extra_info=None, use_
 
     if isinstance(ground_truth, (str, float, int)):
         ground_truths = [ground_truth]
+    elif isinstance(ground_truth, list): ## added to handle cases where ground_truth is already list or ndarray
+        ground_truths = ground_truth
+    elif isinstance(ground_truth, np.ndarray):
+        ground_truths = list(ground_truth)
 
     processed_ground_truths = []
     for truth in ground_truths:

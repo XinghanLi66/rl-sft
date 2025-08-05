@@ -1,0 +1,9 @@
+{"time":"2025-08-04T20:39:43.06193807-07:00","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/homes/gws/lxh22/rl-sft/rl-tests/wandb/run-20250804_203942-mnhs0luo/logs/debug-core.log"}
+{"time":"2025-08-04T20:39:43.259908689-07:00","level":"INFO","msg":"stream: created new stream","id":"mnhs0luo"}
+{"time":"2025-08-04T20:39:43.25996783-07:00","level":"INFO","msg":"stream: started","id":"mnhs0luo"}
+{"time":"2025-08-04T20:39:43.25997496-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"mnhs0luo"}
+{"time":"2025-08-04T20:39:43.25998424-07:00","level":"INFO","msg":"sender: started","stream_id":"mnhs0luo"}
+{"time":"2025-08-04T20:39:43.26002874-07:00","level":"INFO","msg":"handler: started","stream_id":"mnhs0luo"}
+{"time":"2025-08-04T20:39:43.439446188-07:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-05T13:28:36.761715182-07:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/coder66-RL-lab/verl_few_shot/mnhs0luo/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2025-08-05T14:28:44.608372935-07:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)"}
