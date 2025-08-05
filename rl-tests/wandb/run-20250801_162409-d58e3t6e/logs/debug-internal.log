@@ -1,9 +1,0 @@
-{"time":"2025-08-01T16:24:11.397140975-07:00","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/homes/gws/lxh22/rl-sft/rl-tests/wandb/run-20250801_162409-d58e3t6e/logs/debug-core.log"}
-{"time":"2025-08-01T16:24:11.696988136-07:00","level":"INFO","msg":"stream: created new stream","id":"d58e3t6e"}
-{"time":"2025-08-01T16:24:11.697029796-07:00","level":"INFO","msg":"stream: started","id":"d58e3t6e"}
-{"time":"2025-08-01T16:24:11.697044106-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"d58e3t6e"}
-{"time":"2025-08-01T16:24:11.697076325-07:00","level":"INFO","msg":"sender: started","stream_id":"d58e3t6e"}
-{"time":"2025-08-01T16:24:11.697337544-07:00","level":"INFO","msg":"handler: started","stream_id":"d58e3t6e"}
-{"time":"2025-08-01T16:24:11.885621211-07:00","level":"INFO","msg":"Starting system monitor"}
-{"time":"2025-08-01T20:32:27.737814636-07:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": context deadline exceeded"}
-{"time":"2025-08-03T22:43:53.571070974-07:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": context deadline exceeded"}
