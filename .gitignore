@@ -1,5 +1,7 @@
 one-shot-em/checkpoints
 one-shot-em/wandb
+rl-tests/wandb
+One-Shot-RLVR/wandb
 one-input-sft/save*
 save/
 stash/
