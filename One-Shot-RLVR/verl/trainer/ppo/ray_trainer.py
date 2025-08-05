@@ -48,6 +48,7 @@ import wandb
 import re
 import matplotlib.pyplot as plt
 import random
+import shutil
 
 
 WorkerType = Type[Worker]
@@ -396,7 +397,7 @@ class RayPPOTrainer(object):
         self.history_accuracy = {} 
         self.history_accuracy_with_step = {}
         self.validation_accuracy_by_source = {}
-
+        
     def _validate_config(self):
         config = self.config
         # number of GPUs total
@@ -511,7 +512,7 @@ class RayPPOTrainer(object):
                                     return_raw_chat=self.config.data.get('return_raw_chat', False),
                                     truncation='error')
         self.val_dataloader = DataLoader(dataset=self.val_dataset,
-                                        batch_size=len(self.val_dataset),
+                                        batch_size=len(self.val_dataset), ## full batch validation?
                                         shuffle=True,
                                         drop_last=True,
                                         collate_fn=collate_fn)
@@ -860,6 +861,22 @@ class RayPPOTrainer(object):
                 json.dump(self.validation_accuracy_by_source, f, indent=4)
             os.replace(tmp_file, score_source_path)
 
+    def _extract_avg_acc(self, step):
+        """
+        Extract the average accuracy from history_accuracy_with_step for a given step.
+        If the step is not found, return 0.0.
+        """
+        num_sources = 0
+        total_accuracy = 0.0
+        for source_name, step_acc in self.validation_accuracy_by_source.items():
+            if step not in step_acc:
+                continue
+            num_sources += 1
+            total_accuracy += step_acc[step]
+        if num_sources == 0:
+            raise ValueError(f"No sources found in validation accuracy for step {step}.")
+        return total_accuracy / num_sources
+
     def _save_checkpoint(self):
         # path: given_path + `/global_step_{global_steps}` + `/actor`
         local_global_step_folder = os.path.join(self.config.trainer.default_local_dir,
@@ -899,8 +916,60 @@ class RayPPOTrainer(object):
             json.dump(training_state, f)
 
         # latest checkpointed iteration tracker (for atomic usage)
-        local_latest_checkpointed_iteration = os.path.join(self.config.trainer.default_local_dir,
-                                                           'latest_checkpointed_iteration.txt')
+        local_latest_checkpointed_iteration = os.path.join(self.config.trainer.default_local_dir, 'latest_checkpointed_iteration.txt')
+        local_best_checkpointed_iteration = os.path.join(self.config.trainer.default_local_dir, 'best_checkpointed_iteration.txt')
+
+        try:
+            with open(local_best_checkpointed_iteration, 'r') as f:
+                content = f.read().strip()
+                best_saved_step = int(content)
+        except (FileNotFoundError, ValueError):
+            best_saved_step = -1
+
+        try:
+            with open(local_latest_checkpointed_iteration, 'r') as f:
+                content = f.read().strip()
+                last_saved_step = int(content)
+        except (FileNotFoundError, ValueError):
+            last_saved_step = -1
+
+        ## we save the best and the last
+        if best_saved_step == -1 and last_saved_step == -1:
+            new_acc = self._extract_avg_acc(self.global_steps)
+            best_saved_step = self.global_steps
+            last_saved_step = self.global_steps
+            print(f"###### updating best checkpointed step to {self.global_steps}, averaged accuracy {new_acc}")
+            with open(local_best_checkpointed_iteration, 'w') as f:
+                f.write(str(best_saved_step))
+        elif best_saved_step == -1 or last_saved_step == -1:
+            raise ValueError(f"best_saved_step={best_saved_step} but last_saved_step={last_saved_step}, which is not expected.")
+        elif last_saved_step >= self.global_steps:
+            raise ValueError(f"last_saved_step={last_saved_step} but global_steps={self.global_steps}, which is not expected.")
+        else:
+            ## old best averaged accuracy
+            old_best_acc = self._extract_avg_acc(best_saved_step)
+            new_acc = self._extract_avg_acc(self.global_steps)
+            if new_acc <= old_best_acc: ## keep old best, delete last unless it is the same
+                if last_saved_step != best_saved_step:
+                    old_folder = os.path.join(self.config.trainer.default_local_dir, f'global_step_{last_saved_step}')
+                    print(f"deleting last checkpoint: step {last_saved_step}")
+                    shutil.rmtree(old_folder)
+                else:
+                    print(f"keeping last checkpoint: step {last_saved_step} as it is also the best step")
+            else:  ## delete old best and last, update best
+                old_folder = os.path.join(self.config.trainer.default_local_dir, f'global_step_{best_saved_step}')
+                print(f"deleting best checkpoint: step {best_saved_step} as it is surpassed by current step {self.global_steps}")
+                shutil.rmtree(old_folder)
+                if last_saved_step != best_saved_step:
+                    old_folder = os.path.join(self.config.trainer.default_local_dir, f'global_step_{last_saved_step}')
+                    print(f"deleting last checkpoint: step {last_saved_step}")
+                    shutil.rmtree(old_folder)
+                ## update best saved step
+                best_saved_step = self.global_steps
+                print(f"###### updating best checkpointed step to {self.global_steps}, averaged accuracy {new_acc}")
+                with open(local_best_checkpointed_iteration, 'w') as f:
+                    f.write(str(best_saved_step))
+                       
         with open(local_latest_checkpointed_iteration, 'w') as f:
             f.write(str(self.global_steps))
 
@@ -1011,7 +1080,7 @@ class RayPPOTrainer(object):
         # load checkpoint before doing anything
         self._load_checkpoint()
 
-        self._save_checkpoint()
+        # self._save_checkpoint() ## we will save initial checkpoint after validation (12 lines below)
 
         # perform validation before training
         # currently, we only support validation using the reward_function.
@@ -1030,6 +1099,8 @@ class RayPPOTrainer(object):
         # we start from step 1
         self.global_steps += 1
 
+        base_rollout_wg = deepcopy(self.actor_rollout_wg)
+
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 metrics = {}
@@ -1042,6 +1113,10 @@ class RayPPOTrainer(object):
                 score_records = []
                 with _timer('step', timing_raw):
                     # generate a batch
+                    ## in offline version, actor_rollout_wg here is changed to base model
+                    # with _timer('gen', timing_raw):
+                    #     gen_batch_output = base_rollout_wg.generate_sequences(gen_batch)
+
                     with _timer('gen', timing_raw):
                         gen_batch_output = self.actor_rollout_wg.generate_sequences(gen_batch)
 
@@ -1070,7 +1145,8 @@ class RayPPOTrainer(object):
                     # balance the number of valid tokens on each dp rank.
                     # Note that this breaks the order of data inside the batch.
                     # Please take care when you implement group based adv computation such as GRPO and rloo
-                    self._balance_batch(batch, metrics=metrics)
+                    if self.config.algorithm.adv_estimator != 'grpo':
+                        self._balance_batch(batch, metrics=metrics)
 
                     # compute global_valid tokens
                     batch.meta_info['global_token_num'] = torch.sum(batch.batch['attention_mask'], dim=-1).tolist()

@@ -242,7 +242,7 @@ class DataParallelPPOActor(BasePPOActor):
                 entropy_coeff = self.config.entropy_coeff
                 # pg_loss_coeff is 1.0 if config has no pg_loss_coeff
                 pg_loss_coeff = self.config.get('pg_loss_coeff', 1.0)
-                print(f'### pg_loss_coeff: {pg_loss_coeff}')
+                # print(f'### pg_loss_coeff: {pg_loss_coeff}') ## uncomment to debug
 
                 # all return: (bsz, response_length)
                 entropy, log_prob = self._forward_micro_batch(micro_batch=data, temperature=temperature)
