@@ -331,7 +331,7 @@ def _timer(name: str, timing_raw: Dict[str, float]):
     timing_raw[name] = timer.last
 
 
-class RayPPOTrainer(object):
+class RayPPOTrainerSFT(object):
     """
     Note that this trainer runs on the driver process on a single CPU/GPU node.
     """
@@ -943,11 +943,8 @@ class RayPPOTrainer(object):
                 f.write(str(best_saved_step))
         elif best_saved_step == -1 or last_saved_step == -1:
             raise ValueError(f"best_saved_step={best_saved_step} but last_saved_step={last_saved_step}, which is not expected.")
-        elif last_saved_step > self.global_steps:
+        elif last_saved_step >= self.global_steps:
             raise ValueError(f"last_saved_step={last_saved_step} but global_steps={self.global_steps}, which is not expected.")
-        elif last_saved_step == self.global_steps:
-            print(f"resuming from last saved step {last_saved_step}")
-            pass
         else:
             ## old best averaged accuracy
             old_best_acc = self._extract_avg_acc(best_saved_step)

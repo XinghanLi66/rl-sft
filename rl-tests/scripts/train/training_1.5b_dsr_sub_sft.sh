@@ -1,14 +1,14 @@
 #!/bin/bash
-# bash scripts/train/training_1.5b_pi1_r128_offline.sh
+# bash scripts/train/training_1.5b_dsr_sub_sft.sh
 set -x
 
 CHECKPOINTS_DIR=/local1/lxh/save
 
 export VLLM_ATTENTION_BACKEND=XFORMERS
 
-CUDA_VISIBLE_DEVICES=4,5,6,7 python3 -m verl.trainer.main_ppo \
+python3 -m verl.trainer.main_ppo_sft \
  algorithm.adv_estimator=grpo \
- data.train_files=data/train/one_shot_rlvr/pi1_r128.parquet \
+ data.train_files=data/train/one_shot_rlvr/dsr_sub.parquet \
  data.val_files=data/test/math_minerva_aime25x8.parquet \
  data.train_batch_size=128 \
  data.val_batch_size=530 \
@@ -40,12 +40,12 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 python3 -m verl.trainer.main_ppo \
  trainer.critic_warmup=0 \
  trainer.logger=['console','wandb'] \
  trainer.project_name='verl_few_shot'\
- trainer.experiment_name='Qwen2.5-Math-1.5B-pi1_offline_0805'\
+ trainer.experiment_name='Qwen2.5-Math-1.5B-dsr_sub_sft_0805'\
  trainer.checkpoints_dir=$CHECKPOINTS_DIR \
  +trainer.val_before_train=True \
- trainer.n_gpus_per_node=4 \
+ trainer.n_gpus_per_node=8 \
  trainer.nnodes=1 \
  trainer.save_freq=20 \
  trainer.test_freq=20 \
  trainer.default_hdfs_dir=null \
- trainer.total_epochs=200 2>&1 | tee 1.5b_pi1_offline.log
+ trainer.total_epochs=200 2>&1 | tee 1.5b_dsrsub_sft.log
