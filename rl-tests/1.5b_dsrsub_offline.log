@@ -12253,3 +12253,87 @@
 [36m(main_task pid=276713)[0m Rounded to the nearest power of 10, this is \(10^{10}\) years. So the final answer is:
 [36m(WorkerDict pid=278021)[0m /homes/gws/lxh22/miniconda3/envs/rlvr_train/lib/python3.10/site-packages/torch/distributed/fsdp/fully_sharded_data_parallel.py:689: FutureWarning: FSDP.state_dict_type() and FSDP.set_state_dict_type() are being deprecated. Please use APIs, get_state_dict() and set_state_dict(), which can support different parallelisms, FSDP1, FSDP2, DDP. API doc: https://pytorch.org/docs/stable/distributed.checkpoint.html#torch.distributed.checkpoint.state_dict.get_state_dict .Tutorial: https://pytorch.org/tutorials/recipes/distributed_checkpoint_recipe.html .
 [36m(WorkerDict pid=278021)[0m   warnings.warn(
+[36m(WorkerDict pid=278304)[0m /homes/gws/lxh22/miniconda3/envs/rlvr_train/lib/python3.10/site-packages/torch/utils/checkpoint.py:1399: FutureWarning: `torch.cpu.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cpu', args...)` instead.
+[36m(WorkerDict pid=278304)[0m   with device_autocast_ctx, torch.cpu.amp.autocast(**cpu_autocast_kwargs), recompute_context:  # type: ignore[attr-defined]
+[36m(WorkerDict pid=278310)[0m /homes/gws/lxh22/miniconda3/envs/rlvr_train/lib/python3.10/site-packages/torch/distributed/fsdp/fully_sharded_data_parallel.py:689: FutureWarning: FSDP.state_dict_type() and FSDP.set_state_dict_type() are being deprecated. Please use APIs, get_state_dict() and set_state_dict(), which can support different parallelisms, FSDP1, FSDP2, DDP. API doc: https://pytorch.org/docs/stable/distributed.checkpoint.html#torch.distributed.checkpoint.state_dict.get_state_dict .Tutorial: https://pytorch.org/tutorials/recipes/distributed_checkpoint_recipe.html .[32m [repeated 7x across cluster][0m
+[36m(WorkerDict pid=278310)[0m   warnings.warn([32m [repeated 7x across cluster][0m
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m \[
+[36m(main_task pid=276713)[0m \boxed{10^{10}}
+[36m(main_task pid=276713)[0m \]
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m ### Subproblem 2: Age of our universe today in Gyr
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m The age of the universe today is approximately 10^10 years. To convert this to gigayears (Gyr), we divide by 10^9 (since there are 10^9 years in a gigayear):
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m \[ \text{Age in Gyr} = \frac{10^{10}}{10^9} = 10 \text{ Gyr} \]
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m So the final answer is:
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m \[
+[36m(main_task pid=276713)[0m \boxed{10}
+[36m(main_task pid=276713)[0m \]
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m ### Subproblem 3: Number of stars in our Galaxy
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m The number of stars in our Galaxy is approximately \(10^{11}\). So the final answer is:
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m \[
+[36m(main_task pid=276713)[0m \boxed{10^{11}}
+[36m(main_task pid=276713)[0m \]
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m ### Subproblem 4: Light travel time to closest star (Sun!:) in minutes
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m The closest star to our Sun is approximately 4.24 light-years away. To find the light travel time in minutes, we first convert light-years to seconds:
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m \[ \text{Distance in light-years} = 4.24 \text{ light-years} \]
+[36m(main_task pid=276713)[0m \[ \text{Distance in meters} = 4.24 \times 9.461 \times 10^{15} \text{ meters} \]
+[36m(main_task pid=276713)[0m \[ \text{Speed of light} = 3 \times 10^8 \text{ meters/second} \]
+[36m(main_task pid=276713)[0m \[ \text{Time in seconds} = \frac{4.24 \times 9.461 \times 10^{15}}{3 \times 10^8} \approx 1.34 \times 10^{10} \text{ seconds} \]
+[36m(main_task pid=276713)[0m \[ \text{Time in minutes} = \frac{1.34 \times 10^{10}}{60} \approx 2.23 \times 10^8 \text{ minutes} \]
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m Rounded to the nearest integer, this is \(2.23 \times 10^8\) minutes. So the final answer is:
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m \[
+[36m(main_task pid=276713)[0m \boxed{223000000}
+[36m(main_task pid=276713)[0m \]
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m Let's confirm all the calculations with Python code.
+[36m(main_task pid=276713)[0m ```python
+[36m(main_task pid=276713)[0m # Subproblem 0: Age of the universe when most He nuclei were formed in minutes
+[36m(main_task pid=276713)[0m age_in_seconds = 10**15
+[36m(main_task pid=276713)[0m age_in_minutes = age_in_seconds / 60
+[36m(main_task pid=276713)[0m age_in_minutes_rounded = round(age_in_minutes, -13)  # Round to the nearest power of 10
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m # Subproblem 1: Age of the universe when hydrogen atoms formed in years
+[36m(main_task pid=276713)[0m age_in_seconds = 10**17
+[36m(main_task pid=276713)[0m age_in_years = age_in_seconds / 3.154 * 10**7
+[36m(main_task pid=276713)[0m age_in_years_rounded = round(age_in_years, -10)  # Round to the nearest power of 10
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m # Subproblem 2: Age of the universe today in Gyr
+[36m(main_task pid=276713)[0m age_in_years = 10**10
+[36m(main_task pid=276713)[0m age_in_gyr = age_in_years / 10**9
+[36m(main_task pid=276713)[0m age_in_gyr_rounded = round(age_in_gyr)  # Round to the nearest Gyr
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m # Subproblem 3: Number of stars in our Galaxy
+[36m(main_task pid=276713)[0m number_of_stars = 10**11
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m # Subproblem 4: Light travel time to closest star (Sun!:) in minutes
+[36m(main_task pid=276713)[0m distance_light_years = 4.24
+[36m(main_task pid=276713)[0m distance_meters = distance_light_years * 9.461 * 10**15
+[36m(main_task pid=276713)[0m speed_of_light = 3 * 10**8
+[36m(main_task pid=276713)[0m time_seconds = distance_meters / speed_of_light
+[36m(main_task pid=276713)[0m time_minutes = time_seconds / 60
+[36m(main_task pid=276713)[0m time_minutes_rounded = round(time_minutes)  # Round to the nearest integer
+[36m(main_task pid=276713)[0m 
+[36m(main_task pid=276713)[0m print(((age_in_minutes_rounded, age_in_years_rounded, age_in_gyr_rounded, number_of_stars, time_minutes_rounded)))
+[36m(main_task pid=276713)[0m ```<|endoftext|>
+[36m(WorkerDict pid=278021)[0m [rank-0]: Saving model to /local1/lxh/save/verl_few_shot/Qwen2.5-Math-1.5B-dsr_sub_offline_0804/global_step_1080/actor/model_world_size_8_rank_0.pt
+[36m(WorkerDict pid=278021)[0m [rank-0]: Saving checkpoint to /local1/lxh/save/verl_few_shot/Qwen2.5-Math-1.5B-dsr_sub_offline_0804/global_step_1080/actor/model_world_size_8_rank_0.pt
+[36m(WorkerDict pid=278021)[0m [rank-0]: Saving extra_state to /local1/lxh/save/verl_few_shot/Qwen2.5-Math-1.5B-dsr_sub_offline_0804/global_step_1080/actor/extra_state_world_size_8_rank_0.pt
+[36m(WorkerDict pid=278021)[0m Saving actor checkpoint to /local1/lxh/save/verl_few_shot/Qwen2.5-Math-1.5B-dsr_sub_offline_0804/global_step_1080/actor
+[36m(main_task pid=276713)[0m deleting last checkpoint: step 1060
+[36m(WorkerDict pid=278310)[0m [rank-7]: Saving model to /local1/lxh/save/verl_few_shot/Qwen2.5-Math-1.5B-dsr_sub_offline_0804/global_step_1080/actor/model_world_size_8_rank_7.pt[32m [repeated 7x across cluster][0m
+[36m(WorkerDict pid=278310)[0m [rank-7]: Saving checkpoint to /local1/lxh/save/verl_few_shot/Qwen2.5-Math-1.5B-dsr_sub_offline_0804/global_step_1080/actor/model_world_size_8_rank_7.pt[32m [repeated 7x across cluster][0m
+[36m(WorkerDict pid=278310)[0m [rank-7]: Saving extra_state to /local1/lxh/save/verl_few_shot/Qwen2.5-Math-1.5B-dsr_sub_offline_0804/global_step_1080/actor/extra_state_world_size_8_rank_7.pt[32m [repeated 7x across cluster][0m
+[36m(main_task pid=276713)[0m step:1080 - actor/kl_loss:0.011 - actor/kl_coef:0.001 - actor/pg_loss_coeff:1.000 - actor/entropy_loss:0.088 - actor/pg_loss:0.018 - actor/pg_clipfrac:0.000 - actor/ppo_kl:0.000 - actor/loss:0.001 - actor/grad_norm:0.041 - mfu/actor:0.000 - actor/lr:0.000 - sampling_frequency/avg:114.342 - sampling_frequency/max:120.000 - sampling_frequency/min:103.000 - val/test_score/deepscaler/aime25x8:0.096 - val/test_score/deepscaler/math:0.730 - val/test_score/deepscaler/minerva:0.257 - critic/score/mean:0.564 - critic/score/max:1.000 - critic/score/min:0.000 - critic/rewards/mean:0.564 - critic/rewards/max:1.000 - critic/rewards/min:0.000 - critic/advantages/mean:-0.046 - critic/advantages/max:2.475 - critic/advantages/min:-2.475 - critic/returns/mean:-0.046 - critic/returns/max:2.475 - critic/returns/min:-2.475 - response_length/mean:927.242 - response_length/max:3072.000 - response_length/min:179.000 - response_length/clip_ratio:0.026 - prompt_length/mean:128.844 - prompt_length/max:476.000 - prompt_length/min:57.000 - prompt_length/clip_ratio:0.000 - timing_s/gen:77.947 - timing_s/old_log_prob:8.349 - timing_s/ref:7.902 - timing_s/adv:1.249 - timing_s/update_actor:35.853 - timing_s/log_scores:0.386 - timing_s/testing:81.490 - timing_s/save_checkpoint:13.442 - timing_s/step:226.880 - timing_per_token_ms/ref:0.007 - timing_per_token_ms/adv:0.001 - timing_per_token_ms/update_actor:0.033 - timing_per_token_ms/gen:0.082

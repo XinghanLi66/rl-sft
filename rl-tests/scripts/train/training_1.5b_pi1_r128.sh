@@ -61,4 +61,4 @@ python3 -m verl.trainer.main_ppo \
  trainer.save_freq=20 \
  trainer.test_freq=20 \
  trainer.default_hdfs_dir=null \
- trainer.total_epochs=200 2>&1 | tee verl_demo.log
+ trainer.total_epochs=2000 2>&1 | tee verl_demo.log

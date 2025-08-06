@@ -48,4 +48,4 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 python3 -m verl.trainer.main_ppo \
  trainer.save_freq=20 \
  trainer.test_freq=20 \
  trainer.default_hdfs_dir=null \
- trainer.total_epochs=200 2>&1 | tee 1.5b_pi1_offline.log
+ trainer.total_epochs=2000 2>&1 | tee 1.5b_pi1_offline.log
