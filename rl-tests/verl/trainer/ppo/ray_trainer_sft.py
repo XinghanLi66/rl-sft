@@ -1159,6 +1159,18 @@ class RayPPOTrainerSFT(object):
                             ref_log_prob = self.ref_policy_wg.compute_ref_log_prob(batch)
                             batch = batch.union(ref_log_prob)
 
+                        if self.global_steps <= 10:
+                            print("############ debug: is ref policy = base policy?")
+                            _base_log_prob = base_rollout_wg.compute_log_prob(batch)
+                            _actor_log_prob = self.actor_rollout_wg.compute_log_prob(batch)
+                            _kld_ref_base = core_algos.kl_penalty(ref_log_prob, _base_log_prob, kl_penalty=self.config.algorithm.kl_penalty)
+                            _kld_base_actor = core_algos.kl_penalty(_actor_log_prob, _base_log_prob, kl_penalty=self.config.algorithm.kl_penalty)
+                            print(f"base log prob shape: {_base_log_prob.shape}")
+                            print(f"actor log prob shape: {_actor_log_prob.shape}")
+                            print(f"ref log prob shape: {ref_log_prob.shape}")
+                            print(f"kl penalty between ref and base: {_kld_ref_base}")
+                            print(f"kl penalty between actor and base: {_kld_base_actor}")
+
                     # compute values
                     if self.use_critic:
                         with _timer('values', timing_raw):

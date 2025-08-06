@@ -120,7 +120,7 @@ def main_task(config, compute_score=None):
 
     resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
 
-    trainer = RayPPOTrainer(config=config,
+    trainer = RayPPOTrainerSFT(config=config,
                             tokenizer=tokenizer,
                             role_worker_mapping=role_worker_mapping,
                             resource_pool_manager=resource_pool_manager,
