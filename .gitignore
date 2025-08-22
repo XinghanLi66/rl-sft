@@ -1,16 +1,21 @@
 DFT/verl/checkpoints
 DFT/verl/wandb
 DFT/verl/outputs
+DFT/verl/data
 
 one-shot-em/checkpoints
 one-shot-em/wandb
+one-shot-em/dataset/
 
 rl-tests/wandb
 rl-tests/outputs
 
 One-Shot-RLVR/wandb
 One-Shot-RLVR/outputs
+One-Shot-RLVR/data/
 
 one-input-sft/save*
+one-input-sft/train-data/
+
 save/
 stash/
