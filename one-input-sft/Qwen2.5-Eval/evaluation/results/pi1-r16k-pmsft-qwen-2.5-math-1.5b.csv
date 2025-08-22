@@ -1,0 +1,8 @@
+checkpoint,amc23x8,math500,minerva_math,olympiadbench,amc23x8-t06,aime25x8-t06
+global_step_0,33.4,35.8,10.3,22.8,32.8,2.9
+global_step_10,46.6,63.2,24.6,28.7,42.2,4.2
+global_step_20,43.1,63.8,21.7,27.4,42.2,4.6
+global_step_30,33.4,56.2,24.6,23.9,36.9,2.5
+global_step_40,24.7,51.8,21.3,22.2,35.3,2.9
+global_step_50,32.5,50.8,20.2,20.4,31.9,1.7
+global_step_58,30.9,50.2,20.6,21.2,29.7,2.1

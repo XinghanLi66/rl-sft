@@ -66,6 +66,7 @@ class Role(Enum):
     RefPolicy = 4
     RewardModel = 5
     ActorRolloutRef = 6
+    # RolloutRef = 7  ## added for offline GRPO
 
 
 @dataclass
@@ -147,7 +148,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                                                                       lam=lam)
         data.batch['advantages'] = advantages
         data.batch['returns'] = returns
-    elif adv_estimator == 'grpo':
+    elif adv_estimator.startswith('grpo'):
         token_level_rewards = data.batch['token_level_rewards']
         index = data.non_tensor_batch['uid']
         responses = data.batch['responses']
@@ -363,11 +364,15 @@ class RayPPOTrainerSFT(object):
         self.role_worker_mapping = role_worker_mapping
         self.resource_pool_manager = resource_pool_manager
         self.use_reference_policy = Role.RefPolicy in role_worker_mapping
+        self.use_actor_rollout_ref = Role.ActorRolloutRef in role_worker_mapping  ## offline rollout
         self.use_rm = Role.RewardModel in role_worker_mapping
         self.ray_worker_group_cls = ray_worker_group_cls
 
+        if self.config.algorithm.adv_estimator == 'grpo_offline':
+            self.use_reference_policy = False
+        
         # define KL control
-        if self.use_reference_policy:
+        if self.use_reference_policy or self.use_actor_rollout_ref:
             if config.algorithm.kl_ctrl.type == 'fixed':
                 self.kl_ctrl = core_algos.FixedKLController(kl_coef=config.algorithm.kl_ctrl.kl_coef)
             elif config.algorithm.kl_ctrl.type == 'adaptive':
@@ -382,7 +387,7 @@ class RayPPOTrainerSFT(object):
 
         if self.config.algorithm.adv_estimator == 'gae':
             self.use_critic = True
-        elif self.config.algorithm.adv_estimator == 'grpo':
+        elif self.config.algorithm.adv_estimator.startswith('grpo'):
             self.use_critic = False
         elif self.config.algorithm.adv_estimator == 'reinforce_plus_plus':
             self.use_critic = False
@@ -777,6 +782,14 @@ class RayPPOTrainerSFT(object):
             critic_cls = RayClassWithInitArgs(cls=self.role_worker_mapping[Role.Critic], config=self.config.critic)
             self.resource_pool_to_cls[resource_pool]['critic'] = critic_cls
 
+        ## create actor rollout ref if needed, for offline rollout
+        if self.use_actor_rollout_ref:
+            resource_pool = self.resource_pool_manager.get_resource_pool(Role.ActorRolloutRef)
+            actor_rollout_ref_cls = RayClassWithInitArgs(cls=self.role_worker_mapping[Role.ActorRolloutRef],
+                                                         config=self.config.actor_rollout_ref,
+                                                         role='actor_rollout_ref')
+            self.resource_pool_to_cls[resource_pool]['actor_rollout_ref'] = actor_rollout_ref_cls
+
         # create reference policy if needed
         if self.use_reference_policy:
             resource_pool = self.resource_pool_manager.get_resource_pool(Role.RefPolicy)
@@ -809,6 +822,11 @@ class RayPPOTrainerSFT(object):
         if self.use_critic:
             self.critic_wg = all_wg['critic']
             self.critic_wg.init_model()
+
+        ## for offline
+        if self.use_actor_rollout_ref:
+            self.actor_rollout_ref_wg = all_wg['actor_rollout_ref']
+            self.actor_rollout_ref_wg.init_model()
 
         if self.use_reference_policy:
             self.ref_policy_wg = all_wg['ref']
@@ -943,8 +961,11 @@ class RayPPOTrainerSFT(object):
                 f.write(str(best_saved_step))
         elif best_saved_step == -1 or last_saved_step == -1:
             raise ValueError(f"best_saved_step={best_saved_step} but last_saved_step={last_saved_step}, which is not expected.")
-        elif last_saved_step >= self.global_steps:
+        elif last_saved_step > self.global_steps:
             raise ValueError(f"last_saved_step={last_saved_step} but global_steps={self.global_steps}, which is not expected.")
+        elif last_saved_step == self.global_steps:
+            print(f"resuming from last saved step {last_saved_step}")
+            pass
         else:
             ## old best averaged accuracy
             old_best_acc = self._extract_avg_acc(best_saved_step)
@@ -1099,8 +1120,6 @@ class RayPPOTrainerSFT(object):
         # we start from step 1
         self.global_steps += 1
 
-        base_rollout_wg = deepcopy(self.actor_rollout_wg)
-
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 metrics = {}
@@ -1113,9 +1132,17 @@ class RayPPOTrainerSFT(object):
                 score_records = []
                 with _timer('step', timing_raw):
                     # generate a batch
-                    ## in offline version, actor_rollout_wg here is changed to base model
+                    ## in offline version, actor_rollout_wg here is changed to base model (ref model)
+                    ## the actor_rollout_ref_wg here is a reference model that keeps static
                     with _timer('gen', timing_raw):
-                        gen_batch_output = base_rollout_wg.generate_sequences(gen_batch)
+                        # gen_batch_output = self.actor_rollout_wg.generate_sequences(gen_batch)
+                        gen_batch_output = self.actor_rollout_ref_wg.generate_sequences(gen_batch)
+
+                    print("################################# gen batch output: ##################################")
+                    print(gen_batch_output)
+                    ## print the first 5 input ids in gen_batch_output
+                    print(gen_batch_output.batch['input_ids'][:5][:100])
+                    print("########################################################################")
 
                     if self.config.algorithm.adv_estimator == 'remax':
                         with _timer('gen_max', timing_raw):
@@ -1142,7 +1169,7 @@ class RayPPOTrainerSFT(object):
                     # balance the number of valid tokens on each dp rank.
                     # Note that this breaks the order of data inside the batch.
                     # Please take care when you implement group based adv computation such as GRPO and rloo
-                    if self.config.algorithm.adv_estimator != 'grpo':
+                    if not self.config.algorithm.adv_estimator.startswith('grpo'):
                         self._balance_batch(batch, metrics=metrics)
 
                     # compute global_valid tokens
@@ -1153,23 +1180,33 @@ class RayPPOTrainerSFT(object):
                         old_log_prob = self.actor_rollout_wg.compute_log_prob(batch)
                         batch = batch.union(old_log_prob)
 
+                    assert not (self.use_actor_rollout_ref and self.use_reference_policy), \
+                        "Using both actor_rollout_ref and reference policy at the same time, " \
+                        "which is not supported."
+
+                    if self.use_actor_rollout_ref:
+                        # compute reference log_prob
+                        with _timer('ref', timing_raw):
+                            ref_log_prob = self.actor_rollout_ref_wg.compute_ref_log_prob(batch)
+                            batch = batch.union(ref_log_prob)
+
+                        if self.global_steps <= 200:
+                            print("############ debug: is ref policy = base policy?")
+                            _ref_log_prob_value = ref_log_prob.batch['ref_log_prob']
+                            _old_log_prob_value = old_log_prob.batch['old_log_probs']
+                            print(f"ref log prob shape: {_ref_log_prob_value.shape}")
+                            print(f"old log prob shape: {_old_log_prob_value.shape}")
+                            print(f"ref log prob value: {_ref_log_prob_value}")
+                            _kld_ref_old = core_algos.kl_penalty(_ref_log_prob_value, _old_log_prob_value,
+                                                                 kl_penalty=self.config.algorithm.kl_penalty)
+                            _kld_mean = _kld_ref_old.mean(axis=-1)
+                            print(f"kl penalty between ref and old: {_kld_mean}")
+
                     if self.use_reference_policy:
                         # compute reference log_prob
                         with _timer('ref', timing_raw):
                             ref_log_prob = self.ref_policy_wg.compute_ref_log_prob(batch)
                             batch = batch.union(ref_log_prob)
-
-                        if self.global_steps <= 10:
-                            print("############ debug: is ref policy = base policy?")
-                            _base_log_prob = base_rollout_wg.compute_log_prob(batch)
-                            _actor_log_prob = self.actor_rollout_wg.compute_log_prob(batch)
-                            _kld_ref_base = core_algos.kl_penalty(ref_log_prob, _base_log_prob, kl_penalty=self.config.algorithm.kl_penalty)
-                            _kld_base_actor = core_algos.kl_penalty(_actor_log_prob, _base_log_prob, kl_penalty=self.config.algorithm.kl_penalty)
-                            print(f"base log prob shape: {_base_log_prob.shape}")
-                            print(f"actor log prob shape: {_actor_log_prob.shape}")
-                            print(f"ref log prob shape: {ref_log_prob.shape}")
-                            print(f"kl penalty between ref and base: {_kld_ref_base}")
-                            print(f"kl penalty between actor and base: {_kld_base_actor}")
 
                     # compute values
                     if self.use_critic:

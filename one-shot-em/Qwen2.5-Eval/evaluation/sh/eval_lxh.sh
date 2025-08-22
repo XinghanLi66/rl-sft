@@ -1,5 +1,5 @@
 set -x
-export CUDA_VISIBLE_DEVICES="4,5,6,7"
+export CUDA_VISIBLE_DEVICES="0,1,2,3"
 # MODEL_NAME_OR_PATH="/mmfs1/gscratch/simondu/lxh/models/Qwen2.5-Math-7B"
 # OUTPUT_DIR="/mmfs1/gscratch/simondu/lxh/rl-sft/one-shot-em/results/7B-eval-promptnobox"
 mkdir -p $OUTPUT_DIR
@@ -7,7 +7,7 @@ PROMPT_TYPE="qwen25-math-cot"
 MAX_TOKENS_PER_CALL="3072"
 SPLIT="test"
 NUM_TEST_SAMPLE=-1
-DATA_NAMES="minerva_math,olympiadbench,math500,amc23x8"
+DATA_NAMES="minerva_math,olympiadbench,math500"
 IFS=',' read -ra DATASETS <<< "$DATA_NAMES"
 ALL_EXIST=true
 

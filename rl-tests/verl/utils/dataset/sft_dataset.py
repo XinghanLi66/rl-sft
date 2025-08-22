@@ -56,8 +56,12 @@ class SFTDataset(Dataset):
             tokenizer = hf_tokenizer(tokenizer)
         self.tokenizer: PreTrainedTokenizer = tokenizer
 
-        self.prompt_key = prompt_key if isinstance(prompt_key, (tuple, list)) else [prompt_key]
-        self.response_key = response_key if isinstance(response_key, (tuple, list)) else [response_key]
+        self.prompt_key = prompt_key[0] if isinstance(prompt_key, (tuple, list)) else prompt_key
+        self.response_key = response_key[0] if isinstance(response_key, (tuple, list)) else response_key
+
+        ## why convert to list? this will cause "no .tolist() method" error on line 113
+        # self.prompt_key = prompt_key if isinstance(prompt_key, (tuple, list)) else [prompt_key]
+        # self.response_key = response_key if isinstance(response_key, (tuple, list)) else [response_key]
         self.prompt_dict_keys = [] if not prompt_dict_keys else prompt_dict_keys
         self.response_dict_keys = [] if not response_dict_keys else response_dict_keys
 
@@ -86,6 +90,9 @@ class SFTDataset(Dataset):
         self.dataframe = pd.concat(dataframes)
         self.prompts = self.dataframe[self.prompt_key]
         print(self.prompts)
+        
+        print(f"self.prompt_key={self.prompt_key}, self.response_key={self.response_key}")
+
         for key in self.prompt_dict_keys:
             # type(x): pandas.core.series.Series
             # type(x[0]): numpy.ndarray

@@ -273,6 +273,8 @@ class DataParallelPPOActor(BasePPOActor):
 
                 if self.config.use_dynamic_bsz:
                     # relative to the dynamic bsz
+                    ## for debug
+                    print(f"########## len(data): {len(data)}, ppo_mini_bsz: {self.config.ppo_mini_batch_size}")
                     loss = policy_loss * (len(data) / self.config.ppo_mini_batch_size)
                 else:
                     loss = policy_loss / self.gradient_accumulation

@@ -102,7 +102,7 @@ class ActorRolloutRefWorker(Worker):
         self.ulysses_sharding_manager = FSDPUlyssesShardingManager(self.ulysses_device_mesh)
 
         self.role = role
-        assert self.role in ['actor', 'rollout', 'ref', 'actor_rollout', 'actor_rollout_ref']
+        assert self.role in ['actor', 'rollout', 'ref', 'actor_rollout', 'actor_rollout_ref'], f"Invalid role: {self.role}"
 
         self._is_actor = self.role in ['actor', 'actor_rollout', 'actor_rollout_ref']
         self._is_rollout = self.role in ['rollout', 'actor_rollout', 'actor_rollout_ref']
@@ -507,6 +507,7 @@ class ActorRolloutRefWorker(Worker):
         prompts = prompts.to('cuda')
 
         assert self._is_rollout
+
         if self._is_offload_param:
             load_fsdp_model_to_gpu(self.actor_module_fsdp)
 

@@ -14,7 +14,7 @@
 """
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
-from verl.trainer.ppo.ray_trainer_sft import RayPPOTrainerSFT
+from verl.trainer.ppo.ray_trainer_sft import RayPPOTrainerSFT ## also change line 67 if change this
 import ray
 import hydra
 from verl.utils.reward_score import deepscaler
@@ -64,12 +64,13 @@ def main_task(config, compute_score=None):
     else:
         raise NotImplementedError
 
-    from verl.trainer.ppo.ray_trainer import ResourcePoolManager, Role
+    from verl.trainer.ppo.ray_trainer_sft import ResourcePoolManager, Role
 
     role_worker_mapping = {
         Role.ActorRollout: ray.remote(ActorRolloutRefWorker),
         Role.Critic: ray.remote(CriticWorker),
-        Role.RefPolicy: ray.remote(ActorRolloutRefWorker)
+        Role.RefPolicy: ray.remote(ActorRolloutRefWorker),  
+        Role.ActorRolloutRef: ray.remote(ActorRolloutRefWorker),  ## offline GRPO
     }
 
     global_pool_id = 'global_pool'
@@ -79,7 +80,8 @@ def main_task(config, compute_score=None):
     mapping = {
         Role.ActorRollout: global_pool_id,
         Role.Critic: global_pool_id,
-        Role.RefPolicy: global_pool_id,
+        Role.RefPolicy: global_pool_id,  
+        Role.ActorRolloutRef: global_pool_id,  ## offline GRPO
     }
 
     # we should adopt a multi-source reward function here

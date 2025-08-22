@@ -6,8 +6,8 @@ CHECKPOINTS_DIR=/local1/lxh/save
 
 export VLLM_ATTENTION_BACKEND=XFORMERS
 
-python3 -m verl.trainer.main_ppo \
- algorithm.adv_estimator=grpo \
+CUDA_VISIBLE_DEVICES=0,1,2,3 python3 -m verl.trainer.main_ppo_sft \
+ algorithm.adv_estimator=grpo_offline \
  data.train_files=data/train/one_shot_rlvr/dsr_sub.parquet \
  data.val_files=data/test/math_minerva_aime25x8.parquet \
  data.train_batch_size=128 \
@@ -36,14 +36,14 @@ python3 -m verl.trainer.main_ppo \
  actor_rollout_ref.rollout.n=8 \
  +actor_rollout_ref.rollout.n_val=1 \
  actor_rollout_ref.ref.fsdp_config.param_offload=True \
- algorithm.kl_ctrl.kl_coef=0.001 \
+ algorithm.kl_ctrl.kl_coef=0.003 \
  trainer.critic_warmup=0 \
  trainer.logger=['console','wandb'] \
- trainer.project_name='verl_few_shot'\
- trainer.experiment_name='Qwen2.5-Math-1.5B-dsr_sub_offline_0804'\
+ trainer.project_name='offline_grpo'\
+ trainer.experiment_name='Qwen2.5-Math-1.5B-dsr_sub_offline_0813_kllarge'\
  trainer.checkpoints_dir=$CHECKPOINTS_DIR \
  +trainer.val_before_train=True \
- trainer.n_gpus_per_node=8 \
+ trainer.n_gpus_per_node=4 \
  trainer.nnodes=1 \
  trainer.save_freq=20 \
  trainer.test_freq=20 \

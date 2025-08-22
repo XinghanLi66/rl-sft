@@ -29,6 +29,7 @@ from contextlib import nullcontext
 import torch
 import torch.distributed
 from torch import nn, optim
+import torch.nn.functional as F
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, MixedPrecision, ShardingStrategy, CPUOffload
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedModel, AutoConfig
@@ -51,6 +52,7 @@ from peft import LoraConfig, TaskType, get_peft_model
 from verl.workers.sharding_manager import FSDPUlyssesShardingManager
 from verl.utils.ulysses import ulysses_pad_and_slice_inputs, gather_outpus_and_unpad
 from verl import DataProto
+
 
 logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv('VERL_SFT_LOGGING_LEVEL', 'WARN'))
@@ -75,8 +77,71 @@ def convert_to_regular_types(obj):
     return obj
 
 
-class FSDPSFTTrainer(object):
+class WeightedCrossEntropyLoss(nn.Module):
+    """
+    Same as torch.nn.functional.cross_entropy, plus per-sample weights.
 
+    - input:  (N, C, ...) logits
+    - target: (N, ...) class indices (Long)
+    - weight: (N,) per-sample weights (or None)
+
+    Semantics:
+      reduction='none' -> returns per-element loss multiplied by the sample's weight
+      reduction='sum'  -> sums weighted losses over all elements
+      reduction='mean' -> weighted mean: sum(weighted losses) / sum(weighted valid elements)
+    """
+    def __init__(self, reduction: str = 'mean', ignore_index: int = -100, label_smoothing: float = 0.0):
+        super().__init__()
+        if reduction not in ('none', 'mean', 'sum'):
+            raise ValueError("reduction must be 'none', 'mean', or 'sum'")
+        self.reduction = reduction
+        self.ignore_index = ignore_index
+        self.label_smoothing = label_smoothing
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor, weight: torch.Tensor | None) -> torch.Tensor:
+        # Per-element CE with PyTorch semantics (no reduction)
+        loss = F.cross_entropy(
+            input, target,
+            reduction='none',
+            ignore_index=self.ignore_index,
+            label_smoothing=self.label_smoothing
+        )  # shape: same as target (N, ...)
+
+        if weight is None:
+            # Defer to pure F.cross_entropy semantics for reductions
+            if self.reduction == 'none':
+                return loss
+            if self.reduction == 'sum':
+                return loss.sum()
+            # 'mean' -> mean over valid elements (PyTorch style)
+            valid = (target != self.ignore_index)
+            denom = valid.sum().clamp_min(1)
+            return (loss * valid.to(loss.dtype)).sum() / denom.to(loss.dtype)
+
+        # Validate and broadcast per-sample weights
+        if weight.dim() != 1 or weight.size(0) != input.size(0):
+            raise ValueError(f"weight must be a 1D tensor of shape (N,), got {tuple(weight.shape)}")
+
+        w = weight.to(dtype=loss.dtype, device=loss.device)
+        # expand to (N, 1, 1, ...) to broadcast over non-batch dims
+        expand_shape = (w.size(0),) + (1,) * (loss.dim() - 1)
+        w = w.view(*expand_shape)
+
+        weighted = loss * w  # per-element, scaled by per-sample weight
+
+        if self.reduction == 'none':
+            return weighted
+
+        if self.reduction == 'sum':
+            return weighted.sum()
+
+        # 'mean' -> weighted mean over valid elements (tokens)
+        valid = (target != self.ignore_index).to(loss.dtype)
+        denom = (valid * w).sum().clamp_min(1e-12)
+        return (weighted * valid).sum() / denom
+    
+
+class FSDPSFTTrainer(object):
     def __init__(self, config, device_mesh: DeviceMesh, ulysses_device_mesh: DeviceMesh):
         self.config = config
         self.device_mesh = device_mesh
@@ -293,7 +358,7 @@ class FSDPSFTTrainer(object):
         attention_mask = batch['attention_mask'].cuda()
         position_ids = batch['position_ids'].cuda()
         loss_mask = batch.pop('loss_mask')[:, :-1].reshape(-1).cuda()
-        loss_fct = nn.CrossEntropyLoss(reduction='none')
+        loss_fct = WeightedCrossEntropyLoss(reduction='none')
 
         # Context manager for sequence parallel if needed
         context = self.sharding_manager if use_sp else nullcontext()
@@ -318,6 +383,7 @@ class FSDPSFTTrainer(object):
                     loss = loss_fct(shift_logits, shift_labels)
                     loss = loss * loss_mask.to(loss.device)
                 else:
+                    raise NotImplementedError("Sequence parallelism with remove padding is not implemented yet.")
                     # IMPORTANT: We have a big assumption here, so we can shard the SAME sequence across SP ranks
                     # i.e., each GPU has <1 sequence, and each SP group has 1 sequence
                     # 1. All SP ranks will receive the *SAME* batch

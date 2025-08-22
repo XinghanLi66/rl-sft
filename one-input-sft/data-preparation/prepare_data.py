@@ -60,6 +60,15 @@ def chat_wrap(tok, user_text: str) -> str:
     return user_text
 
 
+def remove_prompt(text: str) -> str:
+    ## find the first "assistant\n" and remove everything after it
+    match = re.search(r"assistant\s*\n", text)
+    if match:
+        return text[match.end():].strip()
+    else:
+        raise ValueError(f"Text does not contain 'assistant\\n': {text}")
+
+
 def sample_many(accelerator, model, tok, prompt: str, n: int, \
                 batch: int = 8, gen_kwargs: dict | None = None):
     """Generate `n` continuations of the same prompt using multi-GPU if available."""
@@ -117,6 +126,7 @@ def sample_many(accelerator, model, tok, prompt: str, n: int, \
     
     if accelerator.is_main_process:
         batch_results = tok.batch_decode(gathered_ids, skip_special_tokens=True)
+        batch_results = [remove_prompt(text) for text in batch_results]
         return batch_results
     else:
         return []
@@ -185,11 +195,12 @@ def parse_args():
     # Model and data arguments
     parser.add_argument("--model_path", type=str, default="/homes/gws/lxh22/models/Qwen2.5-Math-1.5B")
     parser.add_argument("--input_data", type=str, default="input-data/pi1_r128.parquet")
-    parser.add_argument("--output_parquet", type=str, default="../train-data/pi1_r128_responses.parquet")
-    parser.add_argument("--output_csv", type=str, default="../train-data/pi1_r128_responses.csv")
+    parser.add_argument("--output_parquet", type=str, default="../train-data/pi1_r128_responses_16000.parquet")
+    parser.add_argument("--output_csv", type=str, default="../train-data/pi1_r128_responses_16000.csv")
     
     # Sampling arguments
     parser.add_argument("--n_samples", type=int, default=16000, help="Number of samples to generate")
+    parser.add_argument("--n_train", type=int, default=10000, help="Number of samples to keep for training; the rest will be saved as validation data")
     parser.add_argument("--batch_size", type=int, default=512, help="Batch size for generation")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for Accelerate")
     
@@ -208,13 +219,18 @@ def main():
     args = parse_args()
     set_seed(args.seed)
 
-    ckpt          = args.model_path
-    parquet_in    = args.input_data
-    parquet_out   = args.output_parquet
-    csv_out       = args.output_csv
-    n_samples     = args.n_samples
-    batch_size    = args.batch_size
-    precision     = args.precision
+    assert args.n_train <= args.n_samples, \
+        f"n_train ({args.n_train}) must be less than or equal to n_samples ({args.n_samples})"
+
+    ckpt            = args.model_path
+    parquet_in      = args.input_data
+    parquet_out     = args.output_parquet
+    csv_out         = args.output_csv
+    n_samples       = args.n_samples
+    batch_size      = args.batch_size
+    precision       = args.precision
+    parquet_out_val = parquet_out.replace(".parquet", "_valid.parquet")
+    csv_out_valid   = csv_out.replace(".csv", "_valid.csv")
     
     acc, model, tok = load_model_and_tokenizer(ckpt, mp=precision)
     gen_kwargs = {
@@ -242,17 +258,28 @@ def main():
     ## Under main process, filter out valid samples and save them
     if acc.is_main_process:
         valid_texts  = keep_correct_answers(gen_texts, answer)
+        assert len(valid_texts) >= args.n_train, \
+            f"Not enough valid samples: {len(valid_texts)} found, " \
+            f"but {args.n_train} are required."
         acc.print(f"Generated {len(gen_texts)} samples; "
-               f"{len(valid_texts)} are approximately equal to the answer '{answer}'.")
+               f"{len(valid_texts)} are approximately equal to the answer '{answer}'."
+                f" Saving {args.n_train} of them to {parquet_out} and {csv_out}."
+                f" {len(valid_texts) - args.n_train} valid samples will be saved to {parquet_out_val} and {csv_out_valid}.")
+        
+        out_df = pd.DataFrame({"prompt": [formatted_prompt] * args.n_train,
+                               "response": valid_texts[:args.n_train]})
+        out_df_val = pd.DataFrame({"prompt": [formatted_prompt] * (len(valid_texts) - args.n_train),
+                                   "response": valid_texts[args.n_train:]})
 
-        out_df = pd.DataFrame({"prompt": [prompt] * len(valid_texts),
-                           "response": valid_texts})
         # print(f"out_df.iloc[0]: {out_df.iloc[0]}")
     
         os.makedirs(os.path.dirname(parquet_out), exist_ok=True)
         out_df.to_parquet(parquet_out, index=False)
         out_df.to_csv(csv_out, index=False)
-        acc.print(f"Saved {len(out_df)} pairs → {parquet_out}")
+        out_df_val.to_parquet(parquet_out_val, index=False)
+        out_df_val.to_csv(csv_out_valid, index=False)
+        acc.print(f"Saved {args.n_train} valid samples to {parquet_out} and {csv_out}, "
+               f"and {len(valid_texts) - args.n_train} valid samples to {parquet_out_val} and {csv_out_valid}.")
 
 
 if __name__ == "__main__":
