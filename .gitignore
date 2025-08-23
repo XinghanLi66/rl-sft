@@ -1,7 +1,7 @@
 DFT/verl/checkpoints
 DFT/verl/wandb
 DFT/verl/outputs
-DFT/verl/data
+DFT/verl/data/
 
 one-shot-em/checkpoints
 one-shot-em/wandb
@@ -9,13 +9,17 @@ one-shot-em/dataset/
 
 rl-tests/wandb
 rl-tests/outputs
+rl-tests/data/*.parquet
 
 One-Shot-RLVR/wandb
 One-Shot-RLVR/outputs
-One-Shot-RLVR/data/
+One-Shot-RLVR/data/*.parquet
 
 one-input-sft/save*
 one-input-sft/train-data/
 
 save/
-stash/
+stash/*.parquet
+*.whl*
+DFT/verl/data/
+**/*.whl*
