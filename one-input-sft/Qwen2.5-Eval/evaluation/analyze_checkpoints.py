@@ -42,7 +42,7 @@ def main():
         all_scores.append(
             {
                 "checkpoint": "global_step_0",
-                "amc23x8": 33.4,
+                # "amc23x8": 33.4,
                 "math500": 35.8,
                 "minerva_math": 10.3,
                 "olympiadbench": 22.8,
@@ -58,7 +58,7 @@ def main():
         print("checkpoint_name: ", checkpoint_name)
         scores = {}
         
-        for dataset in ['amc23x8', 'math500', 'minerva_math', 'olympiadbench']:
+        for dataset in ['math500', 'minerva_math', 'olympiadbench']:
             json_files = glob.glob(str(checkpoint_dir / "temp00" / dataset / '*metrics.json'))
             if len(json_files) != 1:
                 raise ValueError(f"Expected 1 metrics.json file, found {len(json_files)} for checkpoint {checkpoint_name}")
@@ -82,7 +82,7 @@ def main():
     df.to_csv(results_dir / f'{task_name}.csv', index=False)
 
     # Create line plot, also plot the average score
-    datasets = ['amc23x8', 'math500', 'minerva_math', 'olympiadbench', 'amc23x8-t06', 'aime25x8-t06']
+    datasets = ['math500', 'minerva_math', 'olympiadbench', 'amc23x8-t06', 'aime25x8-t06']
     plt.figure(figsize=(12, 6))
     for dataset in datasets:
         marker = 's' if 't06' in dataset else 'o'
