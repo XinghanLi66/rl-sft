@@ -22,4 +22,3 @@ save/
 stash/
 **/*.whl
 DFT/verl/data/
-**/*.whl*
