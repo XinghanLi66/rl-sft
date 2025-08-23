@@ -27,9 +27,9 @@ def main():
     results_dir.mkdir(exist_ok=True)
     
     # Find all checkpoint directories
-    task_name = 'pi1-r16k-pmsft-qwen-2.5-math-1.5b'
+    task_name = 'pi1-r16k-ofrl-qwen-2.5-math-1.5b-20steps'
     # checkpoint_base = Path('/homes/gws/lxh22/rl-sft/DFT/verl/checkpoints/numina-cot-ndft-qwen-2.5-math-1.5b')
-    checkpoint_base = Path('/local1/lxh/save/offline_grpo/1.5b_pi1_pmsft')
+    checkpoint_base = Path('/local1/lxh/save/offline_grpo/1.5b_pi1_ofrl')
 
     # checkpoint_base = Path('../../checkpoints/Qwen2.5-Math-1.5B/one_shot')
     # get all directories in checkpoint_base

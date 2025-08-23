@@ -19,7 +19,7 @@ one-input-sft/save*
 one-input-sft/train-data/
 
 save/
-stash/*.parquet
-*.whl*
+stash/
+*.whl
 DFT/verl/data/
-**/*.whl*
+*.whl*
