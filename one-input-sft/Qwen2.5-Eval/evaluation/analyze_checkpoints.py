@@ -42,7 +42,6 @@ def main():
         all_scores.append(
             {
                 "checkpoint": "global_step_0",
-                # "amc23x8": 33.4,
                 "math500": 35.8,
                 "minerva_math": 10.3,
                 "olympiadbench": 22.8,
