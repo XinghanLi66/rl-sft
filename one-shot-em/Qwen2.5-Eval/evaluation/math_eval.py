@@ -240,9 +240,9 @@ def main(llm, tokenizer, data_name, args):
 
     stop_words = ["</s>", "<|im_end|>", "<|endoftext|>"]
 
-    ## added by wyp
-    # if args.prompt_type in ["cot", "qwen25-math-cot-tool"] or (args.prompt_type in ["llama", "deepseek-distill"] and args.num_shots > 0):
-        # stop_words.append("\n\nQuestion:")
+    ## added by lxh
+    if args.prompt_type in ["to", "pi1", "to+pi1", "to+pi1+qr", "to+pi1+ci", "pi1+ci", "nb", "to+pi1+nb", "to+pi1+qr+nb"]:
+        stop_words.append("\n\nQuestion:")
     if args.prompt_type in ["cot", "qwen25-math-cot"]:
         stop_words.append("\n\nQuestion:")
     if args.prompt_type in ["pal", "tool-integrated", "jiuzhang_tora"]:

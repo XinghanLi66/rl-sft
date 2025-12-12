@@ -1,6 +1,7 @@
 import os
 import json
 import glob
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -22,17 +23,17 @@ def sortfunc(x):
         return int(x.name.split('_')[-1])
 
 def main():
-    # Create results directory if it doesn't exist
+    parser = argparse.ArgumentParser()
+    ## also use -t for --task_name, -c for --checkpoint_base
+    parser.add_argument('-t', '--task_name', type=str, default='pi1-r16k-ofrl-qwen-2.5-math-1.5b-20steps')
+    parser.add_argument('-c', '--checkpoint_base', type=str, default='/local1/lxh/save/offline_grpo/1.5b_pi1_ofrl')
+    args = parser.parse_args()
+    task_name = args.task_name
+    checkpoint_base = Path(args.checkpoint_base)
+
     results_dir = Path('results')
     results_dir.mkdir(exist_ok=True)
-    
-    # Find all checkpoint directories
-    task_name = 'pi1-r16k-ofrl-qwen-2.5-math-1.5b-20steps'
-    # checkpoint_base = Path('/homes/gws/lxh22/rl-sft/DFT/verl/checkpoints/numina-cot-ndft-qwen-2.5-math-1.5b')
-    checkpoint_base = Path('/local1/lxh/save/offline_grpo/1.5b_pi1_ofrl')
 
-    # checkpoint_base = Path('../../checkpoints/Qwen2.5-Math-1.5B/one_shot')
-    # get all directories in checkpoint_base
     checkpoint_dirs = [x for x in checkpoint_base.iterdir() if x.is_dir()]
     checkpoint_dirs = sorted(checkpoint_dirs, key=sortfunc)
     
@@ -49,20 +50,39 @@ def main():
                 "aime25x8-t06": 2.9
             }
         )
+    elif "7b" in task_name or "7B" in task_name:
+        all_scores.append(
+            {
+                "checkpoint": "global_step_0",
+                "math500": 50.4,
+                "minerva_math": 12.5,
+                "olympiadbench": 16.4,
+                "amc23x8-t06": 30.9,
+                "aime25x8-t06": 2.1
+            }
+        )
     else:
-        raise NotImplementedError("Lack performance of 7B base model.")
+        raise NotImplementedError("Lack performance of this base model.")
     
     for checkpoint_dir in checkpoint_dirs:
         checkpoint_name = checkpoint_dir.name
         print("checkpoint_name: ", checkpoint_name)
         scores = {}
-        
+        no_score_flag = False
+
         for dataset in ['math500', 'minerva_math', 'olympiadbench']:
             json_files = glob.glob(str(checkpoint_dir / "temp00" / dataset / '*metrics.json'))
-            if len(json_files) != 1:
+            if len(json_files) == 1:
+                json_file = json_files[0]
+                scores[dataset] = extract_scores_from_json(json_file)                
+            elif len(json_files) == 0:
+                no_score_flag = True
+            else:
                 raise ValueError(f"Expected 1 metrics.json file, found {len(json_files)} for checkpoint {checkpoint_name}")
-            json_file = json_files[0]
-            scores[dataset] = extract_scores_from_json(json_file)
+
+        if no_score_flag:
+            print(f"Skipping checkpoint {checkpoint_name} due to missing scores.")
+            continue
 
         for dataset in ['amc23x8', 'aime25x8']: 
             json_files = glob.glob(str(checkpoint_dir / "temp06" / dataset / '*metrics.json'))
